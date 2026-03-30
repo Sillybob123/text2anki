@@ -1505,14 +1505,119 @@ async function downloadApkg() {
       latexPost: '\\end{document}', vers:[], tags:[], req:[[0,'any',[0]]]
     };
 
+    const CLOZE_QFMT = `<div id="kard">
+<div class="tags">{{Tags}}</div>
+{{cloze:Text}}
+</div>`;
+
+    const CLOZE_AFMT = `<div id="kard">
+    <div class="tags" id='tags'>{{Tags}}</div>
+    {{cloze:Text}}
+    <div>&nbsp;</div>
+    <div id='extra'>{{edit::Extra}}</div>
+</div>`;
+
+    const CLOZE_CSS = `/* BACKGROUND AND GENERAL STYLES */
+html {
+    overflow: scroll;
+    overflow-x: hidden;
+    background-color: #1F80C1;
+}
+
+#kard {
+    padding: 15px 10px;
+    max-width: 800px;
+    margin: 0 auto;
+    word-wrap: break-word;
+}
+
+.card {
+    font-family: Avenir;
+    font-size: 18px;
+    text-align: center;
+    color: #E6E6E7;
+    line-height: 1.6em;
+    background-color: #1E282C;
+    width: auto;
+    border: 2px solid white;
+    border-radius: 30px;
+}
+
+.cloze, .cloze b, .cloze u, .cloze i {
+    font-weight: bold;
+    color: MediumSeaGreen !important;
+}
+
+#extra, #extra i {
+    font-size: 15px;
+    color: #E6E6E7;
+    font-style: italic;
+}
+
+.tags {
+    color: #A6ABB9;
+    opacity: 0;
+    font-size: 10px;
+    width: 100%;
+    text-align: center;
+    text-transform: uppercase;
+    position: fixed;
+    padding: 0;
+    top: 0;
+    right: 0;
+}
+
+.tags:hover {
+    opacity: 1;
+    position: fixed;
+}
+
+.card.nightMode {
+    color: #E6E6E7;
+    background-color: #1E282C;
+}
+
+.mobile .card.night_mode {
+    color: #1E282C;
+    background-color: #000000;
+}
+
+.nightMode .cloze {
+    color: #E6E6E7;
+    background-color: #1E282C;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+    max-height: none;
+    margin: 10px auto 10px auto;
+}
+
+tr { font-size: 12px; }
+
+b { color: #EABB3D !important; }
+u { text-decoration: none; color: #21B2B8; }
+i { color: IndianRed; }
+
+u i, i u { color: limegreen !important; font-weight: bold; }
+u b, b u { color: #21B2B8 !important; }
+i b, b i { color: IndianRed !important; font-weight: bold; }
+u b i, b u i, i u b, i b u, b i u, u i b { color: #FF95ED !important; font-weight: bold; }
+
+a { color: LightGray !important; text-decoration: none; font-size: 10px; font-style: normal; }
+
+.mobile .card { color: #E6E6E7; background-color: #000000; }
+.mobile .tags:hover { opacity: 1; position: relative; }`;
+
     const clozeModel = {
-      id: MID_CLOZE, name: 'Cloze', type: 1, mod: now_s, usn: -1, sortf: 0, did: null,
-      tmpls: [{ name:'Cloze', ord:0, qfmt:'{{cloze:Text}}', afmt:'{{cloze:Text}}<br>{{Extra}}', bqfmt:'', bafmt:'', did:null, bfont:'', bsize:0 }],
+      id: MID_CLOZE, name: 'Cloze++', type: 1, mod: now_s, usn: -1, sortf: 0, did: null,
+      tmpls: [{ name:'Cloze', ord:0, qfmt: CLOZE_QFMT, afmt: CLOZE_AFMT, bqfmt:'', bafmt:'', did:null, bfont:'', bsize:0 }],
       flds: [
-        { name:'Text',  ord:0, sticky:false, rtl:false, font:'Arial', size:20, media:[] },
-        { name:'Extra', ord:1, sticky:false, rtl:false, font:'Arial', size:20, media:[] }
+        { name:'Text',  ord:0, sticky:false, rtl:false, font:'Avenir', size:18, media:[] },
+        { name:'Extra', ord:1, sticky:false, rtl:false, font:'Avenir', size:15, media:[] }
       ],
-      css: '.card{font-family:arial;font-size:20px;text-align:center;color:black;background-color:white;}.cloze{font-weight:bold;color:blue;}',
+      css: CLOZE_CSS,
       latexPre: '\\documentclass[12pt]{article}\n\\special{papersize=3in,5in}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amssymb,amsmath}\n\\pagestyle{empty}\n\\setlength{\\parindent}{0in}\n\\begin{document}\n',
       latexPost: '\\end{document}', vers:[], tags:[], req:[[0,'any',[0]]]
     };
