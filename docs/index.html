@@ -1493,14 +1493,150 @@ async function downloadApkg() {
     const MID_CLOZE  = 1577239191269;
 
     // Model ids must be numbers inside the object, but the JSON keys must be strings
+    const BASIC_QFMT = `<div id="bkard">
+  <div class="tags">{{Tags}}</div>
+  <div class="side-label">Question</div>
+  <div class="bfront">{{Front}}</div>
+</div>`;
+
+    const BASIC_AFMT = `<div id="bkard">
+  <div class="tags">{{Tags}}</div>
+  <div class="side-label">Question</div>
+  <div class="bfront">{{Front}}</div>
+  <div class="divider"><span class="divider-dot"></span><span class="divider-dot"></span><span class="divider-dot"></span></div>
+  <div class="side-label answer-label">Answer</div>
+  <div class="bback">{{Back}}</div>
+</div>`;
+
+    const BASIC_CSS = `/* Page */
+html {
+    overflow: scroll;
+    overflow-x: hidden;
+    background-color: #2C3E50;
+}
+
+/* Card wrapper */
+#bkard {
+    padding: 28px 20px 24px;
+    max-width: 760px;
+    margin: 0 auto;
+    word-wrap: break-word;
+}
+
+/* Card base */
+.card {
+    font-family: Avenir, 'Segoe UI', sans-serif;
+    font-size: 18px;
+    text-align: center;
+    color: #E8EAF0;
+    line-height: 1.65em;
+    background-color: #1E282C;
+    border: 2px solid rgba(255,255,255,0.12);
+    border-radius: 28px;
+}
+
+/* Side labels (Question / Answer) */
+.side-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #5B8A7A;
+    margin-bottom: 14px;
+}
+
+.answer-label {
+    color: #7FB5B0;
+    margin-top: 0;
+}
+
+/* Front text */
+.bfront {
+    font-size: 20px;
+    font-weight: 600;
+    color: #E8EAF0;
+    line-height: 1.55;
+    padding: 0 8px;
+}
+
+/* Divider */
+.divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 22px auto;
+}
+
+.divider-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #3D5A52;
+    display: inline-block;
+}
+
+/* Back text */
+.bback {
+    font-size: 18px;
+    color: #A8C4A5;
+    line-height: 1.65;
+    padding: 0 8px 4px;
+    font-weight: 500;
+}
+
+/* Tags */
+.tags {
+    color: #5B8A7A;
+    opacity: 0;
+    font-size: 10px;
+    width: 100%;
+    text-align: center;
+    text-transform: uppercase;
+    position: fixed;
+    padding: 0;
+    top: 0;
+    right: 0;
+}
+
+.tags:hover { opacity: 1; position: fixed; }
+
+/* Color accents */
+b  { color: #EABB3D !important; }
+u  { text-decoration: none; color: #7FB5B0; }
+i  { color: #D4888A; }
+
+u i, i u { color: #8FD4A0 !important; font-weight: bold; }
+u b, b u { color: #7FB5B0 !important; }
+i b, b i { color: #D4888A !important; font-weight: bold; }
+u b i, b u i, i u b, i b u, b i u, u i b { color: #FF95ED !important; font-weight: bold; }
+
+a { color: #7a8c7b !important; text-decoration: none; font-size: 11px; }
+
+img {
+    display: block;
+    max-width: 100%;
+    margin: 14px auto;
+    border-radius: 12px;
+}
+
+/* Night mode */
+.card.nightMode { background-color: #161E21; color: #E8EAF0; }
+.nightMode .bfront { color: #E8EAF0; }
+.nightMode .bback  { color: #9DC49A; }
+
+/* Mobile */
+.mobile .card { background-color: #161E21; }
+.mobile .tags:hover { opacity: 1; position: relative; }`;
+
     const basicModel = {
       id: MID_BASIC, name: 'Basic', type: 0, mod: now_s, usn: -1, sortf: 0, did: null,
-      tmpls: [{ name:'Card 1', ord:0, qfmt:'{{Front}}', afmt:'{{FrontSide}}<hr id=answer>{{Back}}', bqfmt:'', bafmt:'', did:null, bfont:'', bsize:0 }],
+      tmpls: [{ name:'Card 1', ord:0, qfmt: BASIC_QFMT, afmt: BASIC_AFMT, bqfmt:'', bafmt:'', did:null, bfont:'', bsize:0 }],
       flds: [
-        { name:'Front', ord:0, sticky:false, rtl:false, font:'Arial', size:20, media:[] },
-        { name:'Back',  ord:1, sticky:false, rtl:false, font:'Arial', size:20, media:[] }
+        { name:'Front', ord:0, sticky:false, rtl:false, font:'Avenir', size:20, media:[] },
+        { name:'Back',  ord:1, sticky:false, rtl:false, font:'Avenir', size:18, media:[] }
       ],
-      css: '.card{font-family:arial;font-size:20px;text-align:center;color:black;background-color:white;}',
+      css: BASIC_CSS,
       latexPre: '\\documentclass[12pt]{article}\n\\special{papersize=3in,5in}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amssymb,amsmath}\n\\pagestyle{empty}\n\\setlength{\\parindent}{0in}\n\\begin{document}\n',
       latexPost: '\\end{document}', vers:[], tags:[], req:[[0,'any',[0]]]
     };
