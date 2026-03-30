@@ -1,16 +1,1375 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Text2Anki — Convert Text to Anki Decks</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="./assets/index-BeCjohED.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CA9K-_gw.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text2Anki</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #faf8f3;
+    --sage: #8fab87;
+    --sage-light: #b5cdb2;
+    --sage-dark: #6d8f6a;
+    --lavender: #b8a8c8;
+    --teal: #7fb5b0;
+    --teal-dark: #5e9a95;
+    --sand: #e8dfd0;
+    --sand-dark: #d4c8b4;
+    --text: #3d4a3e;
+    --text-muted: #7a8c7b;
+    --glass: rgba(255,255,255,0.55);
+    --glass-border: rgba(184,168,200,0.3);
+    --radius: 20px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background-color: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(ellipse 700px 500px at 10% 20%, rgba(143,171,135,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 600px at 85% 10%, rgba(184,168,200,0.16) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 400px at 50% 80%, rgba(127,181,176,0.14) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 300px at 20% 70%, rgba(184,168,200,0.10) 0%, transparent 60%),
+      radial-gradient(ellipse 300px 400px at 90% 60%, rgba(143,171,135,0.12) 0%, transparent 60%),
+      var(--cream);
+  }
+
+  /* ---- Header ---- */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(250,248,243,0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .logo-circle {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--sage) 0%, var(--teal) 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(127,181,176,0.3);
+  }
+  .wordmark-text { font-weight: 700; font-size: 20px; letter-spacing: -0.3px; }
+
+  .auth-area { display: flex; align-items: center; gap: 12px; }
+
+  .btn-google-signin {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 24px;
+    padding: 7px 16px 7px 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.15s;
+  }
+  .btn-google-signin:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.1); transform: translateY(-1px); }
+
+  .user-info { display: flex; align-items: center; gap: 10px; }
+  .user-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--sage-light);
+  }
+  .user-avatar-placeholder {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--sage) 0%, var(--teal) 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 14px;
+  }
+  .user-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .btn-signout {
+    font-size: 13px; font-weight: 500; color: var(--text-muted);
+    background: none; border: none; cursor: pointer; padding: 4px 8px;
+    border-radius: 8px; transition: background 0.15s, color 0.15s;
+  }
+  .btn-signout:hover { background: var(--sand); color: var(--text); }
+
+  /* ---- Hero ---- */
+  .hero {
+    text-align: center;
+    padding: 72px 24px 48px;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -1px;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--sage-dark) 0%, var(--teal) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-subtitle {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+  }
+  .hero-pills {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .hero-pill {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    backdrop-filter: blur(8px);
+  }
+  .hero-pill.sage  { color: var(--sage-dark);  border-color: rgba(143,171,135,0.4); background: rgba(143,171,135,0.1); }
+  .hero-pill.lav   { color: #7a6a8a;            border-color: rgba(184,168,200,0.5); background: rgba(184,168,200,0.12); }
+  .hero-pill.teal  { color: var(--teal-dark);   border-color: rgba(127,181,176,0.4); background: rgba(127,181,176,0.1); }
+
+  /* ---- Glass panel ---- */
+  .glass-panel {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+  }
+
+  /* ---- Tool card ---- */
+  .main-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px 48px;
+  }
+  .tool-card { padding: 32px; }
+  .tool-row { margin-bottom: 24px; }
+  .tool-row:last-child { margin-bottom: 0; }
+
+  .row-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  label.field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .text-input {
+    width: 100%;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(143,171,135,0.25);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .text-input:focus {
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(143,171,135,0.2);
+  }
+  .text-input::placeholder { color: var(--text-muted); opacity: 0.7; }
+
+  .card-type-pills { display: flex; gap: 8px; }
+  .type-pill {
+    flex: 1;
+    padding: 10px 8px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: var(--sand);
+    color: var(--text-muted);
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .type-pill:hover { background: var(--sand-dark); color: var(--text); }
+  .type-pill.active {
+    background: var(--sage);
+    color: white;
+    border-color: var(--sage-dark);
+    box-shadow: 0 2px 8px rgba(143,171,135,0.35);
+  }
+
+  .textarea-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .card-count-badge {
+    font-size: 12px; font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: var(--sand);
+    color: var(--text-muted);
+    transition: all 0.3s;
+  }
+  .card-count-badge.active {
+    background: rgba(127,181,176,0.2);
+    color: var(--teal-dark);
+    border: 1px solid rgba(127,181,176,0.3);
+  }
+
+  .notes-textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(143,171,135,0.25);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-family: 'Courier New', 'Courier', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    resize: vertical;
+    min-height: 200px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .notes-textarea:focus {
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(143,171,135,0.2);
+  }
+  .notes-textarea::placeholder { color: var(--text-muted); opacity: 0.6; font-family: 'Nunito', sans-serif; }
+
+  .format-hint { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 24px; }
+  .hint-text { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+  .strategy-chip {
+    font-size: 12px; font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: rgba(143,171,135,0.15);
+    color: var(--sage-dark);
+    border: 1px solid rgba(143,171,135,0.3);
+    transition: all 0.2s;
+  }
+
+  .actions-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .btn {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    border-radius: 14px;
+    padding: 11px 22px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: var(--sage);
+    color: white;
+    box-shadow: 0 2px 10px rgba(143,171,135,0.35);
+  }
+  .btn-primary:hover { background: var(--sage-dark); box-shadow: 0 4px 16px rgba(143,171,135,0.45); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-secondary {
+    background: var(--sand);
+    color: var(--text);
+    border: 1px solid var(--sand-dark);
+  }
+  .btn-secondary:hover { background: var(--sand-dark); transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    padding-left: 8px; padding-right: 8px;
+  }
+  .btn-ghost:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+
+  .btn-teal {
+    background: var(--teal);
+    color: white;
+    box-shadow: 0 2px 10px rgba(127,181,176,0.35);
+  }
+  .btn-teal:hover { background: var(--teal-dark); box-shadow: 0 4px 16px rgba(127,181,176,0.45); transform: translateY(-1px); }
+  .btn-teal:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ---- Preview ---- */
+  .preview-section {
+    max-width: 860px;
+    margin: 24px auto 0;
+    padding: 0 24px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+  }
+  .preview-section.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .preview-title-group { display: flex; align-items: center; gap: 12px; }
+  .preview-count { font-size: 20px; font-weight: 700; color: var(--text); }
+  .dupes-badge {
+    font-size: 12px; font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: rgba(232,180,150,0.25);
+    color: #a06040;
+    border: 1px solid rgba(232,180,150,0.4);
+  }
+
+  .cards-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .card-row {
+    background: var(--glass);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 28px 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .card-row.visible { opacity: 1; transform: translateY(0); }
+
+  .card-num { font-size: 12px; font-weight: 700; color: var(--text-muted); padding-top: 2px; }
+  .card-col-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--sage-dark); margin-bottom: 3px; opacity: 0.7; }
+  .card-front { font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.5; }
+  .card-back { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+  .cloze-text { font-family: 'Courier New', monospace; font-size: 13px; }
+  .cloze-mark {
+    background: rgba(143,171,135,0.2);
+    border-radius: 4px;
+    padding: 1px 4px;
+    color: var(--sage-dark);
+    font-weight: 600;
+  }
+
+  /* ---- How to import ---- */
+  .how-section {
+    max-width: 860px;
+    margin: 48px auto 0;
+    padding: 0 24px;
+  }
+  .how-title {
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .step-card { padding: 20px 16px; text-align: center; }
+  .step-num {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(143,171,135,0.15);
+    border: 2px solid rgba(143,171,135,0.35);
+    color: var(--sage-dark);
+    font-weight: 700; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+  }
+  .step-label { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; }
+
+  /* ---- Footer ---- */
+  footer {
+    text-align: center;
+    padding: 48px 24px 32px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  /* ---- Modal ---- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(61,74,62,0.25);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.visible { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    max-width: 680px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 36px;
+    transform: translateY(16px) scale(0.98);
+    transition: transform 0.25s;
+    position: relative;
+  }
+  .modal-overlay.visible .modal { transform: translateY(0) scale(1); }
+
+  .modal-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .modal-subtitle { font-size: 15px; color: var(--text-muted); margin-bottom: 28px; line-height: 1.5; }
+  .modal-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--sand);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--text-muted);
+    transition: background 0.15s;
+  }
+  .modal-close:hover { background: var(--sand-dark); }
+
+  .format-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .format-card {
+    border: 2px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 18px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.6);
+  }
+  .format-card:hover { border-color: rgba(143,171,135,0.5); background: rgba(143,171,135,0.05); }
+  .format-card.selected { border-color: var(--sage); background: rgba(143,171,135,0.1); }
+
+  .format-card-name { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .format-card-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4; }
+  .format-card-example {
+    background: rgba(61,74,62,0.05);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .btn-back {
+    background: none; border: none;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px; font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer; padding: 0;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 4px;
+    transition: color 0.15s;
+  }
+  .btn-back:hover { color: var(--text); }
+
+  .prompt-pre {
+    background: rgba(61,74,62,0.04);
+    border: 1px solid rgba(61,74,62,0.1);
+    border-radius: 14px;
+    padding: 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--text);
+    white-space: pre-wrap;
+    max-height: 340px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+  }
+
+  /* ---- Toast ---- */
+  .toast-container {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  .toast {
+    padding: 12px 18px;
+    border-radius: 14px;
+    font-size: 14px; font-weight: 600;
+    color: white;
+    max-width: 320px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    animation: slideUp 0.3s ease forwards;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .toast.hiding { opacity: 0; transform: translateY(8px); }
+  .toast.success { background: var(--sage-dark); }
+  .toast.error   { background: #c0615a; }
+  .toast.info    { background: var(--teal-dark); }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 640px) {
+    header { padding: 0 16px; }
+    .hero { padding: 48px 16px 32px; }
+    .main-container { padding: 0 16px 36px; }
+    .tool-card { padding: 20px; }
+    .row-split { grid-template-columns: 1fr; gap: 12px; }
+    .format-cards-grid { grid-template-columns: 1fr; }
+    .steps-grid { grid-template-columns: repeat(2, 1fr); }
+    .actions-row { flex-direction: column; align-items: stretch; }
+    .actions-row .btn { justify-content: center; }
+    .preview-header { flex-direction: column; align-items: flex-start; }
+    .card-row { grid-template-columns: 24px 1fr; }
+    .card-back { grid-column: 2; }
+    .modal { padding: 24px 20px; }
+  }
+  @media (max-width: 480px) {
+    .steps-grid { grid-template-columns: 1fr; }
+    .card-type-pills { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <a class="wordmark" href="#">
+    <div class="logo-circle">T</div>
+    <span class="wordmark-text">Text2Anki</span>
+  </a>
+  <div class="auth-area" id="authArea">
+    <button class="btn-google-signin" id="btnSignIn" onclick="signInWithGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.566 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
+        <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.548 0 9s.348 2.825.957 4.039l3.007-2.332z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <div class="user-info" id="userInfo" style="display:none">
+      <div id="userAvatarWrap"></div>
+      <span class="user-name" id="userName"></span>
+      <button class="btn-signout" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>Turn your notes into <span>Anki cards.</span></h1>
+  <p class="hero-subtitle">Paste any text. Get a ready-to-import Anki deck.</p>
+  <div class="hero-pills">
+    <span class="hero-pill sage">Basic Q&amp;A</span>
+    <span class="hero-pill lav">Cloze+</span>
+    <span class="hero-pill teal">Cloze++</span>
+  </div>
+</section>
+
+<!-- Main tool card -->
+<div class="main-container">
+  <div class="tool-card glass-panel">
+
+    <!-- Row 1 -->
+    <div class="tool-row row-split">
+      <div>
+        <label class="field-label" for="deckName">Deck Name</label>
+        <input class="text-input" type="text" id="deckName" placeholder="My Study Deck" value="My Deck">
+      </div>
+      <div>
+        <label class="field-label">Card Type</label>
+        <div class="card-type-pills">
+          <button class="type-pill active" data-type="Basic"   onclick="setCardType('Basic',this)">Basic</button>
+          <button class="type-pill"        data-type="Cloze+"  onclick="setCardType('Cloze+',this)">Cloze+</button>
+          <button class="type-pill"        data-type="Cloze++" onclick="setCardType('Cloze++',this)">Cloze++</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="tool-row">
+      <div class="textarea-header">
+        <label class="field-label" for="notesInput" style="margin-bottom:0">Your study notes</label>
+        <span class="card-count-badge" id="cardCountBadge">0 cards</span>
+      </div>
+      <textarea class="notes-textarea" id="notesInput" rows="12"
+        placeholder="Q: What is the powerhouse of the cell?&#10;A: The mitochondria.&#10;&#10;Q: What process produces ATP?&#10;A: Cellular respiration."></textarea>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="tool-row">
+      <div class="format-hint" id="formatHint">
+        <span class="hint-text">Paste notes above — format will be detected automatically.</span>
+      </div>
+    </div>
+
+    <!-- Row 4 -->
+    <div class="tool-row actions-row">
+      <button class="btn btn-primary" id="btnPreview" onclick="doPreview()" disabled>Preview Cards</button>
+      <button class="btn btn-secondary" onclick="openAIModal()">AI Format Prompt</button>
+      <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Preview section -->
+<div class="preview-section" id="previewSection">
+  <div class="preview-header">
+    <div class="preview-title-group">
+      <span class="preview-count" id="previewCount">0 cards ready</span>
+      <span class="dupes-badge" id="dupesBadge" style="display:none"></span>
+    </div>
+    <button class="btn btn-teal" id="btnDownload" onclick="downloadApkg()">Download .apkg</button>
+  </div>
+  <div class="cards-list" id="cardsList"></div>
+</div>
+
+<!-- How to import -->
+<div class="how-section">
+  <p class="how-title">How to Import</p>
+  <div class="steps-grid">
+    <div class="step-card glass-panel">
+      <div class="step-num">1</div>
+      <div class="step-label">Download the .apkg file</div>
+    </div>
+    <div class="step-card glass-panel">
+      <div class="step-num">2</div>
+      <div class="step-label">Open Anki on your device</div>
+    </div>
+    <div class="step-card glass-panel">
+      <div class="step-num">3</div>
+      <div class="step-label">File &rarr; Import the file</div>
+    </div>
+    <div class="step-card glass-panel">
+      <div class="step-num">4</div>
+      <div class="step-label">Start studying</div>
+    </div>
+  </div>
+</div>
+
+<footer>Text2Anki &middot; paste, convert, study</footer>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- AI Format Prompt Modal -->
+<div class="modal-overlay" id="aiModal" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAIModal()" title="Close">&times;</button>
+
+    <!-- View 1: pick type -->
+    <div id="modalView1">
+      <div class="modal-title">Generate AI Formatting Prompt</div>
+      <div class="modal-subtitle">Choose a card format — the AI will first ask you to confirm before formatting your notes.</div>
+      <div class="format-cards-grid">
+        <div class="format-card" onclick="selectFmt('Basic',this)">
+          <div class="format-card-name">Basic</div>
+          <div class="format-card-desc">Classic front and back flashcards</div>
+          <div class="format-card-example">Q: What is X?
+A: The answer.</div>
+        </div>
+        <div class="format-card" onclick="selectFmt('Cloze+',this)">
+          <div class="format-card-name">Cloze+</div>
+          <div class="format-card-desc">Fill-in-the-blank sentences</div>
+          <div class="format-card-example">The {{c1::answer}} is here.</div>
+        </div>
+        <div class="format-card" onclick="selectFmt('Cloze++',this)">
+          <div class="format-card-name">Cloze++</div>
+          <div class="format-card-desc">Enhanced cloze with rich context</div>
+          <div class="format-card-example">{{c1::Term::hint}} does X || Full explanation here.</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btnGenPrompt" style="width:100%;justify-content:center" onclick="showPromptView()" disabled>Generate Prompt</button>
+    </div>
+
+    <!-- View 2: the prompt -->
+    <div id="modalView2" style="display:none">
+      <button class="btn-back" onclick="backToView1()">&#8592; Back</button>
+      <div class="modal-title">Copy this prompt into ChatGPT or Claude</div>
+      <div class="modal-subtitle">Paste it, then share your notes when asked.</div>
+      <pre class="prompt-pre" id="promptText"></pre>
+      <button class="btn btn-teal" style="width:100%;justify-content:center" onclick="copyPrompt()">Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======================================================
+// FIREBASE
+// ======================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBoU0ikw_z5cyL8nTvBpYlrAvgRpDklZ1M",
+  authDomain: "text2anki.firebaseapp.com",
+  projectId: "text2anki",
+  storageBucket: "text2anki.firebasestorage.app",
+  messagingSenderId: "354909730446",
+  appId: "1:354909730446:web:db9f35da840871c3013bdf"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth   = firebase.auth();
+const fsDb   = firebase.firestore();
+
+let currentUser   = null;
+let existingHashes = new Set();
+
+auth.onAuthStateChanged(async user => {
+  currentUser = user;
+  if (user) {
+    renderUserInfo(user);
+    await loadUserHashes();
+  } else {
+    document.getElementById('btnSignIn').style.display = '';
+    document.getElementById('userInfo').style.display  = 'none';
+    existingHashes = new Set();
+  }
+});
+
+function renderUserInfo(user) {
+  document.getElementById('btnSignIn').style.display  = 'none';
+  document.getElementById('userInfo').style.display   = 'flex';
+  document.getElementById('userName').textContent     = user.displayName || user.email;
+  const wrap = document.getElementById('userAvatarWrap');
+  if (user.photoURL) {
+    wrap.innerHTML = `<img class="user-avatar" src="${user.photoURL}" alt="">`;
+  } else {
+    const i = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
+    wrap.innerHTML = `<div class="user-avatar-placeholder">${i}</div>`;
+  }
+}
+
+async function signInWithGoogle() {
+  try {
+    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    showToast('Signed in successfully', 'success');
+  } catch (e) { showToast('Sign-in failed: ' + e.message, 'error'); }
+}
+
+async function signOut() {
+  try { await auth.signOut(); showToast('Signed out', 'info'); }
+  catch (e) { showToast('Error signing out', 'error'); }
+}
+
+async function loadUserHashes() {
+  if (!currentUser) return;
+  try {
+    const snap = await fsDb.collection('users').doc(currentUser.uid).collection('cardHashes').get();
+    existingHashes = new Set(snap.docs.map(d => d.id));
+  } catch (e) { console.warn('Hashes load failed:', e); }
+}
+
+async function persistHashes(hashes) {
+  if (!currentUser || !hashes.length) return;
+  const col   = fsDb.collection('users').doc(currentUser.uid).collection('cardHashes');
+  const batch = fsDb.batch();
+  for (const h of hashes) batch.set(col.doc(h), { t: firebase.firestore.FieldValue.serverTimestamp() });
+  await batch.commit();
+}
+
+// ======================================================
+// APP STATE
+// ======================================================
+let selectedCardType = 'Basic';
+let parsedCards      = [];
+let previewData      = [];
+let chosenModalFmt   = null;
+
+// ======================================================
+// CARD TYPE
+// ======================================================
+const PLACEHOLDERS = {
+  'Basic':   'Q: What is the powerhouse of the cell?\nA: The mitochondria.\n\nQ: What process produces ATP?\nA: Cellular respiration, specifically oxidative phosphorylation.',
+  'Cloze+':  'The {{c1::mitochondria}} is responsible for producing ATP || Powerhouse of the cell\nCellular respiration yields {{c1::36 to 38}} ATP per glucose || Varies by organism',
+  'Cloze++': 'The {{c1::krebs cycle::TCA cycle}} produces {{c2::3 NADH::electron carrier}} per turn || Occurs in the mitochondrial matrix; each turn also yields 1 FADH2, 1 GTP\n{{c1::Pyruvate decarboxylation::bridge reaction}} links glycolysis to the Krebs cycle || Produces 1 NADH, releases 1 CO2; irreversible'
+};
+
+function setCardType(type, btn) {
+  selectedCardType = type;
+  document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('notesInput').placeholder = PLACEHOLDERS[type] || PLACEHOLDERS['Basic'];
+  debounceParse();
+}
+
+// ======================================================
+// PARSER
+// ======================================================
+function parseCards(text, noteType) {
+  if (!text.trim()) return { cards: [], strategy: 'none' };
+  const strategies = [];
+
+  if (noteType !== 'Basic') {
+    const cc = [];
+    for (const line of text.split('\n')) {
+      const t = line.trim();
+      if (/\{\{c\d+::/.test(t)) {
+        const parts = t.split(' || ');
+        cc.push({ front: parts[0], back: parts[1] || '' });
+      }
+    }
+    if (cc.length) strategies.push({ name: 'Cloze syntax', cards: cc });
+  }
+
+  const lc = [];
+  for (const block of text.split(/\n{2,}/)) {
+    let front = '', back = '', mode = '';
+    for (const line of block.split('\n')) {
+      if (/^(q(uestion)?|front)\s*:/i.test(line)) { front = line.replace(/^[^:]+:\s*/i,''); mode='f'; }
+      else if (/^(a(nswer)?|back)\s*:/i.test(line)) { back = line.replace(/^[^:]+:\s*/i,''); mode='b'; }
+      else if (mode==='f') front += ' '+line.trim();
+      else if (mode==='b') back  += ' '+line.trim();
+    }
+    if (front.trim() && back.trim()) lc.push({ front: front.trim(), back: back.trim() });
+  }
+  if (lc.length) strategies.push({ name: 'Q/A labels', cards: lc });
+
+  const tc = text.split('\n').filter(l=>l.includes('\t')).map(l=>{
+    const p=l.split('\t'); return { front:p[0].trim(), back:p.slice(1).join('\t').trim() };
+  }).filter(c=>c.front&&c.back);
+  if (tc.length) strategies.push({ name: 'Tab-separated', cards: tc });
+
+  const sc = text.split('\n').filter(l=>l.includes(';')&&!l.includes('\t')).map(l=>{
+    const p=l.split(';'); return { front:p[0].trim(), back:p.slice(1).join(';').trim() };
+  }).filter(c=>c.front&&c.back);
+  if (sc.length) strategies.push({ name: 'Semicolon-separated', cards: sc });
+
+  const nc = []; const lines = text.split('\n');
+  for (let i=0;i<lines.length-1;i++){
+    const m=lines[i].match(/^\d+[\.\)]\s+(.+)/);
+    if (m){ const b=lines[i+1].trim(); if(b&&!/^\d+[\.\)]/.test(b)){ nc.push({front:m[1].trim(),back:b});i++; } }
+  }
+  if (nc.length) strategies.push({ name: 'Numbered pairs', cards: nc });
+
+  const al = text.split('\n').filter(l=>l.trim());
+  if (al.length>=2 && al.length%2===0) {
+    const ac=[];
+    for(let i=0;i<al.length;i+=2) ac.push({front:al[i].trim(),back:al[i+1].trim()});
+    strategies.push({ name: 'Alternating lines', cards: ac });
+  }
+
+  if (!strategies.length) return { cards: [], strategy: 'none' };
+  const best = strategies.reduce((a,b) => b.cards.length>a.cards.length ? b : a);
+  return { cards: best.cards.map(c=>({...c, noteType})), strategy: best.name };
+}
+
+let parseTimer = null;
+function debounceParse() {
+  clearTimeout(parseTimer);
+  parseTimer = setTimeout(runParse, 250);
+}
+function runParse() {
+  const text   = document.getElementById('notesInput').value;
+  const result = parseCards(text, selectedCardType);
+  parsedCards  = result.cards;
+  const badge  = document.getElementById('cardCountBadge');
+  const hint   = document.getElementById('formatHint');
+  const btn    = document.getElementById('btnPreview');
+
+  if (parsedCards.length) {
+    badge.textContent = parsedCards.length + (parsedCards.length===1 ? ' card' : ' cards');
+    badge.classList.add('active');
+    hint.innerHTML = `<span class="hint-text">Format detected:</span><span class="strategy-chip">${result.strategy}</span>`;
+    btn.disabled = false;
+  } else {
+    badge.textContent = '0 cards';
+    badge.classList.remove('active');
+    hint.innerHTML = text.trim()
+      ? `<span class="hint-text">No recognizable format detected. Try Q:/A: labels, tab-separated, or cloze syntax.</span>`
+      : `<span class="hint-text">Paste notes above — format will be detected automatically.</span>`;
+    btn.disabled = true;
+  }
+}
+
+document.getElementById('notesInput').addEventListener('input', debounceParse);
+document.getElementById('notesInput').placeholder = PLACEHOLDERS['Basic'];
+
+// ======================================================
+// PREVIEW
+// ======================================================
+function doPreview() {
+  if (!parsedCards.length) return;
+
+  const seen = new Set(), filtered = [], dupes = [];
+  for (const card of parsedCards) {
+    const key = (card.noteType||'') + '\x1f' + (card.front||'').trim().toLowerCase() + '\x1f' + (card.back||'').trim().toLowerCase();
+    if (seen.has(key)) { dupes.push(card); continue; }
+    seen.add(key);
+    filtered.push(card);
+  }
+  previewData = filtered;
+
+  document.getElementById('previewCount').textContent = filtered.length + (filtered.length===1 ? ' card ready' : ' cards ready');
+  const db = document.getElementById('dupesBadge');
+  if (dupes.length) { db.textContent = dupes.length + ' duplicate'+(dupes.length>1?'s':'')+' skipped'; db.style.display=''; }
+  else { db.style.display='none'; }
+
+  const list = document.getElementById('cardsList');
+  list.innerHTML = '';
+  filtered.forEach((card, i) => {
+    const isCloze = card.noteType !== 'Basic';
+    const row = document.createElement('div');
+    row.className = 'card-row';
+    row.innerHTML = `
+      <div class="card-num">${i+1}</div>
+      <div>
+        <div class="card-col-label">${isCloze ? 'Text' : 'Front'}</div>
+        <div class="card-front ${isCloze?'cloze-text':''}">${isCloze ? hlCloze(card.front||'') : esc(card.front||'')}</div>
+      </div>
+      <div>
+        <div class="card-col-label">${isCloze ? 'Extra' : 'Back'}</div>
+        <div class="card-back">${esc(card.back||'')}</div>
+      </div>`;
+    list.appendChild(row);
+    setTimeout(() => row.classList.add('visible'), 40 + i * 35);
+  });
+
+  const sec = document.getElementById('previewSection');
+  sec.classList.add('visible');
+  setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+}
+
+function hlCloze(text) {
+  return esc(text).replace(/\{\{c(\d+)::([^}:]+)(?:::[^}]*)?\}\}/g,
+    (_, n, ans) => `<span class="cloze-mark">{{c${n}::${ans}}}</span>`);
+}
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function clearAll() {
+  document.getElementById('notesInput').value = '';
+  document.getElementById('deckName').value   = 'My Deck';
+  parsedCards = []; previewData = [];
+  runParse();
+  document.getElementById('previewSection').classList.remove('visible');
+  document.getElementById('cardsList').innerHTML = '';
+}
+
+// ======================================================
+// CRYPTO HELPERS
+// ======================================================
+async function sha1csum(text) {
+  const buf   = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text));
+  const bytes = new Uint8Array(buf);
+  return ((bytes[0]<<24)|(bytes[1]<<16)|(bytes[2]<<8)|bytes[3]) >>> 0;
+}
+async function sha256hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function guidFromId(id) {
+  return String(id).split('').map(c=>String.fromCharCode(c.charCodeAt(0)+49)).join('');
+}
+
+// ======================================================
+// APKG DOWNLOAD
+// ======================================================
+async function downloadApkg() {
+  const btn = document.getElementById('btnDownload');
+  btn.disabled = true;
+  btn.textContent = 'Building...';
+  try {
+    if (!previewData.length) { showToast('No cards to export','error'); return; }
+
+    // hash all cards
+    const hm = await Promise.all(previewData.map(async card => {
+      const key = (card.noteType||'')+'\x1f'+(card.front||'').trim().toLowerCase()+'\x1f'+(card.back||'').trim().toLowerCase();
+      return { card, hash: await sha256hex(key) };
+    }));
+
+    let toExport = hm, fsSkipped = 0;
+    if (currentUser && existingHashes.size) {
+      const fresh = hm.filter(x => !existingHashes.has(x.hash));
+      fsSkipped   = hm.length - fresh.length;
+      toExport    = fresh;
+    }
+
+    if (!toExport.length) { showToast('All cards already in your history','info'); return; }
+    if (fsSkipped) showToast(`${fsSkipped} card${fsSkipped>1?'s':''} already saved — skipped`,'info');
+
+    const SQL = await initSqlJs({
+      locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${f}`
+    });
+    const db = new SQL.Database();
+
+    const now_s  = Math.floor(Date.now()/1000);
+    const now_ms = Date.now();
+    const deckId = 1000000000 + Math.floor(Math.random()*999999);
+    const deckName = (document.getElementById('deckName').value.trim() || 'My Deck');
+
+    const MID_BASIC  = 1483786767214;
+    const MID_CLOZE  = 1577239191269;
+
+    const basicModel = {
+      id: String(MID_BASIC), name: 'Basic', type: 0, mod: now_s, usn: -1, sortf: 0, did: null,
+      tmpls: [{ name:'Card 1', ord:0, qfmt:'{{Front}}', afmt:'{{FrontSide}}<hr id=answer>{{Back}}', bqfmt:'', bafmt:'', did:null, bfont:'', bsize:0 }],
+      flds: [
+        { name:'Front', ord:0, sticky:false, rtl:false, font:'Arial', size:20, media:[] },
+        { name:'Back',  ord:1, sticky:false, rtl:false, font:'Arial', size:20, media:[] }
+      ],
+      css: '.card{font-family:arial;font-size:20px;text-align:center;color:black;background-color:white;}',
+      latexPre: '\\documentclass[12pt]{article}\n\\special{papersize=3in,5in}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amssymb,amsmath}\n\\pagestyle{empty}\n\\setlength{\\parindent}{0in}\n\\begin{document}\n',
+      latexPost: '\\end{document}', vers:[], tags:[], req:[[0,'any',[0]]]
+    };
+
+    const clozeModel = {
+      id: String(MID_CLOZE), name: 'Cloze', type: 1, mod: now_s, usn: -1, sortf: 0, did: null,
+      tmpls: [{ name:'Cloze', ord:0, qfmt:'{{cloze:Text}}', afmt:'{{cloze:Text}}<br>{{Extra}}', bqfmt:'', bafmt:'', did:null, bfont:'', bsize:0 }],
+      flds: [
+        { name:'Text',  ord:0, sticky:false, rtl:false, font:'Arial', size:20, media:[] },
+        { name:'Extra', ord:1, sticky:false, rtl:false, font:'Arial', size:20, media:[] }
+      ],
+      css: '.card{font-family:arial;font-size:20px;text-align:center;color:black;background-color:white;}.cloze{font-weight:bold;color:blue;}',
+      latexPre: '\\documentclass[12pt]{article}\n\\special{papersize=3in,5in}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amssymb,amsmath}\n\\pagestyle{empty}\n\\setlength{\\parindent}{0in}\n\\begin{document}\n',
+      latexPost: '\\end{document}', vers:[], tags:[], req:[[0,'any',[0]]]
+    };
+
+    const decks = {
+      '1': { id:1, name:'Default', conf:1, desc:'', extendNew:0, extendRev:50, collapsed:false, newToday:[0,0], revToday:[0,0], lrnToday:[0,0], timeToday:[0,0], mod:now_s, usn:0, dyn:0 },
+      [String(deckId)]: { id:deckId, name:deckName, conf:1, desc:'', extendNew:0, extendRev:50, collapsed:false, newToday:[0,0], revToday:[0,0], lrnToday:[0,0], timeToday:[0,0], mod:now_s, usn:-1, dyn:0 }
+    };
+
+    const dconf = { '1':{ id:1, name:'Default', replayq:true, lapse:{delays:[10],mult:0,minInt:1,leechFails:8,leechAction:0}, rev:{perDay:200,ease4:1.3,fuzz:0.05,minSpace:1,ivlFct:1,maxIvl:36500}, timer:0, maxTaken:60, usn:0, new:{perDay:20,delays:[1,10],separate:true,ints:[1,4,7],initialFactor:2500,bury:true,order:1}, autoplay:true, mod:0 } };
+
+    const colConf = JSON.stringify({ nextPos:1, estTimes:true, activeDecks:[1], sortType:'noteFld', timeLim:0, sortBackwards:false, addToCur:true, curDeck:1, newBury:true, newSpread:0, dueCounts:true, curModel:String(MID_BASIC), collapseTime:1200 });
+
+    db.run(`CREATE TABLE col (id INTEGER PRIMARY KEY, crt INTEGER NOT NULL, mod INTEGER NOT NULL, scm INTEGER NOT NULL, ver INTEGER NOT NULL, dty INTEGER NOT NULL, usn INTEGER NOT NULL, ls INTEGER NOT NULL, conf TEXT NOT NULL, models TEXT NOT NULL, decks TEXT NOT NULL, dconf TEXT NOT NULL, tags TEXT NOT NULL)`);
+    db.run(`INSERT INTO col VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`, [1, now_s, now_ms, now_ms, 11, 0, 0, 0, colConf, JSON.stringify({[MID_BASIC]:basicModel,[MID_CLOZE]:clozeModel}), JSON.stringify(decks), JSON.stringify(dconf), '{}']);
+
+    db.run(`CREATE TABLE notes (id INTEGER PRIMARY KEY, guid TEXT NOT NULL, mid INTEGER NOT NULL, mod INTEGER NOT NULL, usn INTEGER NOT NULL, tags TEXT NOT NULL, flds TEXT NOT NULL, sfld INTEGER NOT NULL, csum INTEGER NOT NULL, flags INTEGER NOT NULL, data TEXT NOT NULL)`);
+    db.run(`CREATE TABLE cards (id INTEGER PRIMARY KEY, nid INTEGER NOT NULL, did INTEGER NOT NULL, ord INTEGER NOT NULL, mod INTEGER NOT NULL, usn INTEGER NOT NULL, type INTEGER NOT NULL, queue INTEGER NOT NULL, due INTEGER NOT NULL, ivl INTEGER NOT NULL, factor INTEGER NOT NULL, reps INTEGER NOT NULL, lapses INTEGER NOT NULL, left INTEGER NOT NULL, odue INTEGER NOT NULL, odid INTEGER NOT NULL, flags INTEGER NOT NULL, data TEXT NOT NULL)`);
+    db.run(`CREATE TABLE revlog (id INTEGER PRIMARY KEY, cid INTEGER NOT NULL, usn INTEGER NOT NULL, ease INTEGER NOT NULL, ivl INTEGER NOT NULL, lastIvl INTEGER NOT NULL, factor INTEGER NOT NULL, time INTEGER NOT NULL, type INTEGER NOT NULL)`);
+    db.run(`CREATE TABLE graves (usn INTEGER NOT NULL, oid INTEGER NOT NULL, type INTEGER NOT NULL)`);
+    db.run(`CREATE INDEX ix_notes_usn ON notes (usn)`);
+    db.run(`CREATE INDEX ix_cards_usn ON cards (usn)`);
+    db.run(`CREATE INDEX ix_cards_nid ON cards (nid)`);
+    db.run(`CREATE INDEX ix_revlog_usn ON revlog (usn)`);
+    db.run(`CREATE INDEX ix_revlog_cid ON revlog (cid)`);
+
+    let due = 1;
+    for (let idx = 0; idx < toExport.length; idx++) {
+      const { card } = toExport[idx];
+      const nid    = now_ms + idx;
+      const isCloze = card.noteType !== 'Basic';
+      const mid    = isCloze ? MID_CLOZE : MID_BASIC;
+      const front  = card.front || '';
+      const back   = card.back  || '';
+      const flds   = front + '\x1f' + back;
+      const csum   = await sha1csum(front);
+      const guid   = guidFromId(nid);
+
+      db.run(`INSERT INTO notes VALUES (?,?,?,?,?,?,?,?,?,?,?)`, [nid, guid, mid, now_s, -1, '', flds, front, csum, 0, '']);
+
+      if (isCloze) {
+        const ords = new Set([...front.matchAll(/\{\{c(\d+)::/g)].map(m => parseInt(m[1],10)-1));
+        if (!ords.size) ords.add(0);
+        for (const ord of ords) {
+          db.run(`INSERT INTO cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, [nid*100+ord, nid, deckId, ord, now_s, -1, 0, 0, due++, 0, 0, 0, 0, 0, 0, 0, 0, '']);
+        }
+      } else {
+        db.run(`INSERT INTO cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, [nid*100, nid, deckId, 0, now_s, -1, 0, 0, due++, 0, 0, 0, 0, 0, 0, 0, 0, '']);
+      }
+    }
+
+    const dbData = db.export();
+    db.close();
+
+    const zip = new JSZip();
+    zip.file('collection.anki21', dbData);
+    zip.file('media', '{}');
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+
+    const url = URL.createObjectURL(blob);
+    const a   = Object.assign(document.createElement('a'), { href: url, download: (deckName.replace(/[^a-z0-9_\-]/gi,'_')||'deck') + '.apkg' });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 6000);
+
+    if (currentUser) {
+      const newH = toExport.map(x => x.hash);
+      await persistHashes(newH);
+      newH.forEach(h => existingHashes.add(h));
+    }
+
+    showToast(`${toExport.length} card${toExport.length>1?'s':''} exported`, 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('Export failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Download .apkg';
+  }
+}
+
+// ======================================================
+// MODAL
+// ======================================================
+function openAIModal() {
+  chosenModalFmt = null;
+  document.querySelectorAll('.format-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('btnGenPrompt').disabled = true;
+  document.getElementById('modalView1').style.display = '';
+  document.getElementById('modalView2').style.display = 'none';
+  document.getElementById('aiModal').classList.add('visible');
+}
+function closeAIModal() { document.getElementById('aiModal').classList.remove('visible'); }
+function closeModalOnBg(e) { if (e.target===document.getElementById('aiModal')) closeAIModal(); }
+
+function selectFmt(fmt, el) {
+  chosenModalFmt = fmt;
+  document.querySelectorAll('.format-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('btnGenPrompt').disabled = false;
+}
+
+function showPromptView() {
+  if (!chosenModalFmt) return;
+  document.getElementById('promptText').textContent = PROMPTS[chosenModalFmt] || '';
+  document.getElementById('modalView1').style.display = 'none';
+  document.getElementById('modalView2').style.display = '';
+}
+
+function backToView1() {
+  document.getElementById('modalView1').style.display = '';
+  document.getElementById('modalView2').style.display = 'none';
+}
+
+async function copyPrompt() {
+  try {
+    await navigator.clipboard.writeText(document.getElementById('promptText').textContent);
+    showToast('Prompt copied to clipboard', 'success');
+  } catch { showToast('Copy failed — select and copy manually', 'error'); }
+}
+
+// ======================================================
+// PROMPTS
+// ======================================================
+const PROMPTS = {
+'Basic':
+`You are an expert Anki flashcard creator.
+
+Before you format anything, introduce yourself and ask:
+
+"I can format your study material into Anki flashcards. Before I begin, I have a few questions:
+
+1. What subject or topic are these notes about?
+2. How would you like your cards formatted?
+   - Basic: Classic question and answer cards (Q: ... / A: ...)
+   - Cloze+: Fill-in-the-blank sentences (The {{c1::answer}} is here.)
+   - Cloze++: Enhanced cloze with rich explanations and memory aids
+
+Please share your notes and confirm your preferred format, and I will produce perfectly structured Anki cards."
+
+Once the user confirms they want Basic format, reformat their notes using EXACTLY this structure:
+
+Q: [Precise, specific question]
+A: [Concise, complete answer]
+
+[blank line between every card]
+
+FORMATTING RULES:
+- One concept per card — never combine two ideas
+- Questions must be specific and unambiguous
+- Answers: 1 to 3 sentences maximum
+- For definitions: Q: What is [term]? A: [definition + context]
+- For processes: Q: What are the steps of [process]? A: Step 1... Step 2...
+- For dates: Q: When did [event] occur? A: [date + brief context]
+- For people: Q: Who was [person]? A: [role + key contribution]
+- Never use pronouns without clear antecedents in questions
+- Do not number the cards
+- Do not add headers, section titles, or commentary
+- One blank line between every card, nothing else
+
+EXAMPLE OUTPUT:
+Q: What is the primary function of the mitochondria?
+A: The mitochondria produces ATP through cellular respiration, supplying energy to the cell.
+
+Q: What process do mitochondria use to generate ATP?
+A: Oxidative phosphorylation, occurring in the inner mitochondrial membrane.
+
+Q: What is the net ATP yield of cellular respiration per glucose molecule?
+A: Approximately 36 to 38 ATP molecules, depending on cell type and efficiency.`,
+
+'Cloze+':
+`You are an expert Anki flashcard creator.
+
+Before you format anything, introduce yourself and ask:
+
+"I can format your study material into Anki flashcards. Before I begin, I have a few questions:
+
+1. What subject or topic are these notes about?
+2. How would you like your cards formatted?
+   - Basic: Classic question and answer cards
+   - Cloze+: Fill-in-the-blank sentences (recommended for vocabulary, facts, and definitions)
+   - Cloze++: Enhanced cloze with rich explanations and memory aids
+
+Please share your notes and confirm your preferred format."
+
+Once the user confirms Cloze+ format, reformat using EXACTLY this structure — one card per line:
+
+[Complete sentence with {{c1::hidden answer}} inside it] || [Optional extra context or blank]
+
+FORMATTING RULES:
+- Each line is exactly one card — no multi-line cards
+- Use {{c1::word or phrase}} to hide the key concept being tested
+- Use {{c2::word}} for a second important deletion in the same sentence
+- Never hide more than two concepts per sentence
+- After || add a brief hint, category label, or leave blank — do not write lengthy text here
+- The sentence must remain grammatically complete and meaningful when the cloze is shown as [...]
+- Hide the most important testable word — never hide articles, prepositions, or common verbs
+- For definitions: [Term] is defined as {{c1::definition}} || [domain or category]
+- For cause-effect: [Cause] leads to {{c1::effect}} because {{c2::mechanism}} ||
+- Do not add blank lines between cards
+- Do not number the cards
+- Do not add headers or section titles
+
+EXAMPLE OUTPUT:
+The {{c1::mitochondria}} is responsible for producing ATP through cellular respiration || Also called the powerhouse of the cell
+Cellular respiration produces a net yield of {{c1::36 to 38}} ATP molecules per glucose molecule || Yield varies by organism and cell type
+The {{c1::krebs cycle}} takes place in the {{c2::mitochondrial matrix}} || Part of aerobic respiration; also called the TCA cycle
+ATP synthase uses a {{c1::proton gradient}} to drive the synthesis of ATP || Located in the inner mitochondrial membrane`,
+
+'Cloze++':
+`You are an expert Anki flashcard creator specializing in high-retention, deeply contextual flashcards.
+
+Before you format anything, introduce yourself and ask:
+
+"I can format your study material into Anki flashcards. Before I begin, I have a few questions:
+
+1. What subject or topic are these notes about?
+2. What level are you studying at (introductory, undergraduate, graduate, professional)?
+3. How would you like your cards formatted?
+   - Basic: Classic question and answer cards
+   - Cloze+: Fill-in-the-blank sentences
+   - Cloze++: Enhanced cloze with rich context, mnemonics, and deep explanations (best for complex material)
+
+Please share your notes and confirm your format."
+
+Once the user confirms Cloze++ format, use EXACTLY this structure — one card per line:
+
+[Sentence with {{c1::answer::hint}} syntax] || [Rich context: full explanation, mnemonic, clinical relevance, or connections to other concepts]
+
+FORMATTING RULES:
+- {{c1::answer::hint}} — the third field after :: is a short hint shown during the question
+- Use {{c2::answer::hint}} for a second deletion in the same sentence
+- After || write a genuinely rich Extra field — minimum one full sentence
+- The Extra field should include: full explanation, why it matters, a memory device if applicable, connections to related concepts
+- Prioritize depth over quantity — 10 rich cards beat 40 shallow ones
+- The sentence with cloze must be complete and testable on its own
+- The hint (third :: field) should be a brief clue, not the answer itself
+- Do not add blank lines between cards
+- Do not add headers or section titles
+
+EXAMPLE OUTPUT:
+The {{c1::krebs cycle::TCA cycle}} produces {{c2::3 NADH::electron carrier}} per turn || Occurs in the mitochondrial matrix; each turn also yields 1 FADH2, 1 GTP, and releases 2 CO2; runs twice per glucose molecule since pyruvate produces 2 acetyl-CoA
+{{c1::Pyruvate decarboxylation::bridge reaction}} links glycolysis to the Krebs cycle by producing {{c2::acetyl-CoA::2-carbon compound}} || Also called the pyruvate oxidation step; occurs in the mitochondrial matrix; produces 1 NADH and releases 1 CO2 per pyruvate; irreversible reaction
+ATP synthase harnesses the {{c1::proton motive force::electrochemical gradient}} to synthesize ATP via {{c2::chemiosmosis::passive H+ flow}} || The H+ gradient across the inner mitochondrial membrane drives rotation of the F0 subunit; produces approximately 2.5 ATP per NADH; discovered by Peter Mitchell who received the 1978 Nobel Prize`
+};
+
+// ======================================================
+// TOAST
+// ======================================================
+function showToast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('hiding');
+    setTimeout(() => t.remove(), 400);
+  }, 4000);
+}
+</script>
+</body>
 </html>
