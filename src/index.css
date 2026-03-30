@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #faf8f3;
+  --color-sage: #8fab87;
+  --color-sage-light: #a8c4a5;
+  --color-sage-dark: #6d8f6a;
+  --color-lavender: #b8a8c8;
+  --color-lavender-light: #d4c8e0;
+  --color-lavender-muted: #e8e0f0;
+  --color-teal-calm: #7fb5b0;
+  --color-teal-light: #a0cdc9;
+  --color-teal-dark: #5a9a95;
+  --color-warm-sand: #e8dfd0;
+  --color-warm-rose: #d4b8b0;
+  --color-text-primary: #3d4a3e;
+  --color-text-secondary: #6b7a6c;
+  --color-text-muted: #9aaa9b;
+
+  --font-family-sans: 'Nunito', system-ui, sans-serif;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+
+  --shadow-calm: 0 4px 24px rgba(107, 122, 108, 0.12);
+  --shadow-calm-lg: 0 8px 40px rgba(107, 122, 108, 0.16);
+  --shadow-card: 0 2px 12px rgba(107, 122, 108, 0.08);
+
+  --animate-fade-in: fadeIn 0.4s ease-out;
+  --animate-slide-up: slideUp 0.4s ease-out;
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--color-cream);
+    font-family: var(--font-family-sans);
+    color: var(--color-text-primary);
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(143, 171, 135, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 10%, rgba(184, 168, 200, 0.10) 0%, transparent 45%),
+      radial-gradient(ellipse at 60% 80%, rgba(127, 181, 176, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 10% 90%, rgba(212, 184, 176, 0.08) 0%, transparent 45%);
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(184, 168, 200, 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(143, 171, 135, 0.5);
+}
+
+textarea {
+  font-family: 'Nunito', ui-monospace, monospace;
+}
