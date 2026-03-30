@@ -1503,60 +1503,65 @@ async function downloadApkg() {
   <div class="tags">{{Tags}}</div>
   <div class="side-label">Question</div>
   <div class="bfront">{{Front}}</div>
-  <div class="divider"><span class="divider-dot"></span><span class="divider-dot"></span><span class="divider-dot"></span></div>
+  <div class="divider"><span class="divider-line"></span><span class="divider-diamond"></span><span class="divider-line"></span></div>
   <div class="side-label answer-label">Answer</div>
   <div class="bback">{{Back}}</div>
 </div>`;
 
-    const BASIC_CSS = `/* Page */
+    const BASIC_CSS = `/* Page — soft warm cream gradient */
 html {
     overflow: scroll;
     overflow-x: hidden;
-    background-color: #2C3E50;
+    background: linear-gradient(160deg, #f5f0e8 0%, #ede8f5 50%, #e8f0ed 100%);
+    min-height: 100%;
 }
 
 /* Card wrapper */
 #bkard {
-    padding: 28px 20px 24px;
-    max-width: 760px;
+    padding: 32px 24px 28px;
+    max-width: 720px;
     margin: 0 auto;
     word-wrap: break-word;
 }
 
-/* Card base */
+/* Card base — frosted glass on warm linen */
 .card {
-    font-family: Avenir, 'Segoe UI', sans-serif;
+    font-family: 'Georgia', 'Times New Roman', serif;
     font-size: 18px;
     text-align: center;
-    color: #E8EAF0;
-    line-height: 1.65em;
-    background-color: #1E282C;
-    border: 2px solid rgba(255,255,255,0.12);
-    border-radius: 28px;
+    color: #3a4a3b;
+    line-height: 1.7em;
+    background: rgba(255, 253, 248, 0.92);
+    border: 1.5px solid rgba(143, 171, 135, 0.35);
+    border-radius: 26px;
+    box-shadow: 0 8px 40px rgba(100, 120, 100, 0.13), 0 2px 8px rgba(143,171,135,0.10);
 }
 
-/* Side labels (Question / Answer) */
+/* Side labels */
 .side-label {
+    font-family: 'Avenir', 'Helvetica Neue', sans-serif;
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #5B8A7A;
-    margin-bottom: 14px;
+    letter-spacing: 2.5px;
+    color: #8fab87;
+    margin-bottom: 16px;
 }
 
 .answer-label {
-    color: #7FB5B0;
+    color: #7fb5b0;
     margin-top: 0;
 }
 
-/* Front text */
+/* Front — strong, clear question */
 .bfront {
-    font-size: 20px;
+    font-family: 'Avenir', 'Helvetica Neue', sans-serif;
+    font-size: 21px;
     font-weight: 600;
-    color: #E8EAF0;
-    line-height: 1.55;
-    padding: 0 8px;
+    color: #3a4a3b;
+    line-height: 1.5;
+    padding: 0 12px;
+    letter-spacing: -0.2px;
 }
 
 /* Divider */
@@ -1564,69 +1569,87 @@ html {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    margin: 22px auto;
+    gap: 0;
+    margin: 24px auto;
 }
 
-.divider-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #3D5A52;
+.divider-line {
+    height: 1px;
+    width: 64px;
+    background: linear-gradient(90deg, transparent, rgba(143,171,135,0.4), transparent);
     display: inline-block;
 }
 
-/* Back text */
+.divider-diamond {
+    width: 6px;
+    height: 6px;
+    background: #8fab87;
+    transform: rotate(45deg);
+    display: inline-block;
+    margin: 0 10px;
+    opacity: 0.6;
+}
+
+/* Back — warm answer text */
 .bback {
-    font-size: 18px;
-    color: #A8C4A5;
-    line-height: 1.65;
-    padding: 0 8px 4px;
-    font-weight: 500;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 19px;
+    color: #5a7a5c;
+    line-height: 1.7;
+    padding: 0 12px 6px;
+    font-weight: 400;
 }
 
 /* Tags */
 .tags {
-    color: #5B8A7A;
+    color: #b8a8c8;
     opacity: 0;
+    font-family: 'Avenir', sans-serif;
     font-size: 10px;
     width: 100%;
     text-align: center;
     text-transform: uppercase;
+    letter-spacing: 1px;
     position: fixed;
     padding: 0;
     top: 0;
     right: 0;
 }
-
 .tags:hover { opacity: 1; position: fixed; }
 
 /* Color accents */
-b  { color: #EABB3D !important; }
-u  { text-decoration: none; color: #7FB5B0; }
-i  { color: #D4888A; }
+b { color: #b07d2a !important; }
+u { text-decoration: none; color: #5a9a95; }
+i { color: #9a6060; }
 
-u i, i u { color: #8FD4A0 !important; font-weight: bold; }
-u b, b u { color: #7FB5B0 !important; }
-i b, b i { color: #D4888A !important; font-weight: bold; }
-u b i, b u i, i u b, i b u, b i u, u i b { color: #FF95ED !important; font-weight: bold; }
+u i, i u { color: #5a8a6a !important; font-weight: bold; }
+u b, b u { color: #5a9a95 !important; }
+i b, b i { color: #9a6060 !important; font-weight: bold; }
+u b i, b u i, i u b, i b u, b i u, u i b { color: #9a6090 !important; font-weight: bold; }
 
-a { color: #7a8c7b !important; text-decoration: none; font-size: 11px; }
+a { color: #8fab87 !important; text-decoration: none; font-size: 11px; }
 
 img {
     display: block;
     max-width: 100%;
-    margin: 14px auto;
-    border-radius: 12px;
+    margin: 16px auto;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
 /* Night mode */
-.card.nightMode { background-color: #161E21; color: #E8EAF0; }
-.nightMode .bfront { color: #E8EAF0; }
-.nightMode .bback  { color: #9DC49A; }
+.card.nightMode {
+    background: rgba(30, 36, 30, 0.97);
+    color: #d8e0d8;
+    border-color: rgba(143,171,135,0.2);
+}
+.nightMode .bfront { color: #dde8dd; }
+.nightMode .bback  { color: #8fab87; }
+.nightMode .side-label { color: #6d8f6a; }
+.nightMode .answer-label { color: #5e9a95; }
 
 /* Mobile */
-.mobile .card { background-color: #161E21; }
+.mobile .card { background: rgba(255,253,248,0.98); }
 .mobile .tags:hover { opacity: 1; position: relative; }`;
 
     const basicModel = {
