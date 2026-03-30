@@ -1091,8 +1091,9 @@ async function downloadApkg() {
     const MID_BASIC  = 1483786767214;
     const MID_CLOZE  = 1577239191269;
 
+    // Model ids must be numbers inside the object, but the JSON keys must be strings
     const basicModel = {
-      id: String(MID_BASIC), name: 'Basic', type: 0, mod: now_s, usn: -1, sortf: 0, did: null,
+      id: MID_BASIC, name: 'Basic', type: 0, mod: now_s, usn: -1, sortf: 0, did: null,
       tmpls: [{ name:'Card 1', ord:0, qfmt:'{{Front}}', afmt:'{{FrontSide}}<hr id=answer>{{Back}}', bqfmt:'', bafmt:'', did:null, bfont:'', bsize:0 }],
       flds: [
         { name:'Front', ord:0, sticky:false, rtl:false, font:'Arial', size:20, media:[] },
@@ -1104,7 +1105,7 @@ async function downloadApkg() {
     };
 
     const clozeModel = {
-      id: String(MID_CLOZE), name: 'Cloze', type: 1, mod: now_s, usn: -1, sortf: 0, did: null,
+      id: MID_CLOZE, name: 'Cloze', type: 1, mod: now_s, usn: -1, sortf: 0, did: null,
       tmpls: [{ name:'Cloze', ord:0, qfmt:'{{cloze:Text}}', afmt:'{{cloze:Text}}<br>{{Extra}}', bqfmt:'', bafmt:'', did:null, bfont:'', bsize:0 }],
       flds: [
         { name:'Text',  ord:0, sticky:false, rtl:false, font:'Arial', size:20, media:[] },
@@ -1115,17 +1116,22 @@ async function downloadApkg() {
       latexPost: '\\end{document}', vers:[], tags:[], req:[[0,'any',[0]]]
     };
 
-    const decks = {
-      '1': { id:1, name:'Default', conf:1, desc:'', extendNew:0, extendRev:50, collapsed:false, newToday:[0,0], revToday:[0,0], lrnToday:[0,0], timeToday:[0,0], mod:now_s, usn:0, dyn:0 },
-      [String(deckId)]: { id:deckId, name:deckName, conf:1, desc:'', extendNew:0, extendRev:50, collapsed:false, newToday:[0,0], revToday:[0,0], lrnToday:[0,0], timeToday:[0,0], mod:now_s, usn:-1, dyn:0 }
-    };
+    // Anki requires all top-level JSON keys to be strings
+    const modelsObj = {};
+    modelsObj[String(MID_BASIC)] = basicModel;
+    modelsObj[String(MID_CLOZE)] = clozeModel;
 
-    const dconf = { '1':{ id:1, name:'Default', replayq:true, lapse:{delays:[10],mult:0,minInt:1,leechFails:8,leechAction:0}, rev:{perDay:200,ease4:1.3,fuzz:0.05,minSpace:1,ivlFct:1,maxIvl:36500}, timer:0, maxTaken:60, usn:0, new:{perDay:20,delays:[1,10],separate:true,ints:[1,4,7],initialFactor:2500,bury:true,order:1}, autoplay:true, mod:0 } };
+    const decksObj = {};
+    decksObj['1'] = { id:1, name:'Default', conf:1, desc:'', extendNew:0, extendRev:50, collapsed:false, newToday:[0,0], revToday:[0,0], lrnToday:[0,0], timeToday:[0,0], mod:now_s, usn:0, dyn:0 };
+    decksObj[String(deckId)] = { id:deckId, name:deckName, conf:1, desc:'', extendNew:0, extendRev:50, collapsed:false, newToday:[0,0], revToday:[0,0], lrnToday:[0,0], timeToday:[0,0], mod:now_s, usn:-1, dyn:0 };
+
+    const dconfObj = {};
+    dconfObj['1'] = { id:1, name:'Default', replayq:true, lapse:{delays:[10],mult:0,minInt:1,leechFails:8,leechAction:0}, rev:{perDay:200,ease4:1.3,fuzz:0.05,minSpace:1,ivlFct:1,maxIvl:36500}, timer:0, maxTaken:60, usn:0, new:{perDay:20,delays:[1,10],separate:true,ints:[1,4,7],initialFactor:2500,bury:true,order:1}, autoplay:true, mod:0 };
 
     const colConf = JSON.stringify({ nextPos:1, estTimes:true, activeDecks:[1], sortType:'noteFld', timeLim:0, sortBackwards:false, addToCur:true, curDeck:1, newBury:true, newSpread:0, dueCounts:true, curModel:String(MID_BASIC), collapseTime:1200 });
 
     db.run(`CREATE TABLE col (id INTEGER PRIMARY KEY, crt INTEGER NOT NULL, mod INTEGER NOT NULL, scm INTEGER NOT NULL, ver INTEGER NOT NULL, dty INTEGER NOT NULL, usn INTEGER NOT NULL, ls INTEGER NOT NULL, conf TEXT NOT NULL, models TEXT NOT NULL, decks TEXT NOT NULL, dconf TEXT NOT NULL, tags TEXT NOT NULL)`);
-    db.run(`INSERT INTO col VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`, [1, now_s, now_ms, now_ms, 11, 0, 0, 0, colConf, JSON.stringify({[MID_BASIC]:basicModel,[MID_CLOZE]:clozeModel}), JSON.stringify(decks), JSON.stringify(dconf), '{}']);
+    db.run(`INSERT INTO col VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`, [1, now_s, now_ms, now_ms, 11, 0, 0, 0, colConf, JSON.stringify(modelsObj), JSON.stringify(decksObj), JSON.stringify(dconfObj), '{}']);
 
     db.run(`CREATE TABLE notes (id INTEGER PRIMARY KEY, guid TEXT NOT NULL, mid INTEGER NOT NULL, mod INTEGER NOT NULL, usn INTEGER NOT NULL, tags TEXT NOT NULL, flds TEXT NOT NULL, sfld INTEGER NOT NULL, csum INTEGER NOT NULL, flags INTEGER NOT NULL, data TEXT NOT NULL)`);
     db.run(`CREATE TABLE cards (id INTEGER PRIMARY KEY, nid INTEGER NOT NULL, did INTEGER NOT NULL, ord INTEGER NOT NULL, mod INTEGER NOT NULL, usn INTEGER NOT NULL, type INTEGER NOT NULL, queue INTEGER NOT NULL, due INTEGER NOT NULL, ivl INTEGER NOT NULL, factor INTEGER NOT NULL, reps INTEGER NOT NULL, lapses INTEGER NOT NULL, left INTEGER NOT NULL, odue INTEGER NOT NULL, odid INTEGER NOT NULL, flags INTEGER NOT NULL, data TEXT NOT NULL)`);
