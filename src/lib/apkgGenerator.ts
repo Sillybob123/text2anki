@@ -6,7 +6,7 @@ import { sha1Int } from './hasher'
 // Dynamically import sql.js so it only loads when needed
 async function loadSQL() {
   const initSqlJs = (await import('sql.js')).default
-  return initSqlJs({ locateFile: () => '/Text2Anki/sql-wasm.wasm' })
+  return initSqlJs({ locateFile: () => './sql-wasm.wasm' })
 }
 
 function base91Encode(n: number): string {
